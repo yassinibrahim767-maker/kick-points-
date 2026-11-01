@@ -23,6 +23,15 @@ def send_telegram_message(message):
                       json={"chat_id": TG_CHAT_ID, "text": message}, timeout=5)
     except: pass
 
+def send_telegram_photo(photo_path, caption=""):
+    if not TG_TOKEN or not TG_CHAT_ID: return
+    try:
+        with open(photo_path, "rb") as f:
+            requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendPhoto", 
+                          data={"chat_id": TG_CHAT_ID, "caption": caption}, 
+                          files={"photo": f}, timeout=10)
+    except: pass
+
 def is_channel_live(page):
     try:
         if page.locator('video').count() > 0 or page.locator('text="LIVE"').count() > 0:
@@ -42,20 +51,22 @@ def run_session():
         try:
             print("جاري فتح صفحة تسجيل الدخول...")
             page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=60000)
-            time.sleep(random.uniform(3, 5))
+            time.sleep(random.uniform(5, 8))  # زيادة وقت الانتظار عشان الكابتشا تحل نفسها
             
             # فحص الكابتشا
             if page.locator('iframe[title*="reCAPTCHA"]').count() > 0:
                 print("تم اكتشاف كابتشا! جاري محاولة الحل...")
-                try: SyncChallenger(page).solve_recaptcha()
-                except: pass
+                try: 
+                    SyncChallenger(page).solve_recaptcha()
+                    time.sleep(3)
+                except Exception as e: 
+                    print(f"فشل حل الكابتشا: {e}")
             
             print("جاري البحث عن خانة اسم المستخدم...")
             try:
-                # الانتظار حتى تظهر خانة الاسم (بحد أقصى 15 ثانية)
-                page.wait_for_selector('input[name="username"]', timeout=15000)
-                
-                print("تم العثور على الخانات، جاري إدخال البيانات...")
+                # استنى أطول شوية (30 ثانية) عشان الكابتشا تحل نفسها
+                page.wait_for_selector('input[name="username"]', timeout=30000)
+                print("✅ ظهرت خانة الإسم! جاري إدخال البيانات...")
                 page.fill('input[name="username"]', USERNAME)
                 page.fill('input[name="password"]', PASSWORD)
                 
@@ -72,9 +83,12 @@ def run_session():
                     print("✅ تم تسجيل الدخول بنجاح!")
 
             except Exception as fill_error:
-                print("❌ فشل في العثور على خانة الاسم!")
-                print("--- محتوى الصفحة (أول 3000 حرف) للتحليل ---")
-                print(page.content()[:3000])
+                print("❌ فشل في العثور على خانة الاسم أو ظهرت كابتشا!")
+                print("جاري تصوير الشاشة وإرسالها لتليجرام...")
+                page.screenshot(path="captcha_error.png")
+                send_telegram_photo("captcha_error.png", "❌ البوت عجز عن تسجيل الدخول. دي صورة الشاشة عشان تشوف السبب.")
+                print("--- محتوى الصفحة (أول 1000 حرف) للتحليل ---")
+                print(page.content()[:1000])
                 print("------------------------------------------")
                 raise fill_error
 
