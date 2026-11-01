@@ -14,8 +14,7 @@ TG_CHAT_ID = os.environ.get("TG_CHAT_ID")
 STREAM_URL = "https://kick.com/3li_boltx" 
 LOGIN_URL = "https://kick.com/login"
 
-# أقصى مدة للجلسة (5 ساعات و 20 دقيقة) 
-SESSION_DURATION = 5.33 * 60 * 60 
+SESSION_DURATION = 5.25 * 60 * 60 
 
 def send_telegram_message(message):
     if not TG_TOKEN or not TG_CHAT_ID: return
@@ -32,13 +31,18 @@ def is_channel_live(page):
     except:
         return False
 
+def generate_random_comment():
+    comments = ["مستوى البث خرافي!", "تسلم يا باشا", "محتوى قوي جداً", "أحلى بث في كيك"]
+    return f"{random.choice(comments)} {''.join(random.choices(string.ascii_lowercase, k=3))}"
+
 def run_session():
     print("بدء جلسة جديدة...")
-    with Camoufox(headless="virtual", geoip=True) as browser:
+    with Camoufox(headless="virtual", geoip=True, canvas_noise=False) as browser:
         page = browser.new_page()
         try:
-            page.goto(LOGIN_URL, wait_until="networkidle")
-            time.sleep(random.uniform(2, 4))
+            # التعديل هنا: غيرنا networkidle لـ domcontentloaded
+            page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=60000)
+            time.sleep(random.uniform(3, 5))
             
             if page.locator('iframe[title*="reCAPTCHA"]').count() > 0:
                 try: SyncChallenger(page).solve_recaptcha()
@@ -47,15 +51,15 @@ def run_session():
             page.fill('input[name="username"]', USERNAME)
             page.fill('input[name="password"]', PASSWORD)
             page.click('button[type="submit"]')
-            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("domcontentloaded", timeout=60000)
             time.sleep(random.uniform(3, 5))
 
-            page.goto(STREAM_URL, wait_until="domcontentloaded")
+            page.goto(STREAM_URL, wait_until="domcontentloaded", timeout=60000)
             time.sleep(random.uniform(4, 7)) 
             
             if not is_channel_live(page):
                 print("القناة أوفلاين حالياً.")
-                send_telegram_message("💤 القناة أوفلاين. البوت هيستنى الساعة الجاية عشان يفحص تاني.")
+                send_telegram_message("💤 القناة أوفلاين. البوت هيستنى الساعة الجاية.")
                 return 
                 
             print("القناة لايف! البوت بدأ يتفرج...")
@@ -76,6 +80,14 @@ def run_session():
                 try:
                     page.mouse.move(random.randint(100, 800), random.randint(100, 400))
                 except: pass
+
+                if random.random() < 0.1:
+                    try:
+                        chat_input = page.locator('input[id="chat-input"]').first
+                        if chat_input.is_visible():
+                            chat_input.fill(generate_random_comment())
+                            chat_input.press('Enter')
+                    except: pass
 
                 time.sleep(random.uniform(3, 7))
 
