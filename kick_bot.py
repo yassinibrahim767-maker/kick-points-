@@ -58,7 +58,8 @@ def run_session():
             try:
                 page.locator('text="Log In"').first.click(timeout=10000)
             except:
-                print("فشل في العثور على زرار Log In، جاري المحاولة المباشرة...")
+                print("فشل في العثور على زرار Log In العلوي.")
+                pass
 
             time.sleep(random.uniform(3, 5))
             
@@ -70,31 +71,32 @@ def run_session():
                     time.sleep(3)
                 except: pass
             
-            # 3. إدخال البيانات (استخدام type="text" و type="password" بدل name)
+            # 3. إدخال البيانات
             print("جاري إدخال بيانات الدخول...")
             try:
-                # انتظار ظهور خانة الإيميل/اليوزر
-                email_input = page.locator('input[type="text"]').first
+                # البحث عن الخانة باستخدام النص المكتوب فوقها
+                email_input = page.get_by_label("Email or Username")
                 email_input.wait_for(state="visible", timeout=30000)
                 email_input.fill(USERNAME)
                 
-                # انتظار ظهور خانة الباسورد
-                password_input = page.locator('input[type="password"]').first
+                # البحث عن خانة الباسورد
+                password_input = page.get_by_label("Password")
                 password_input.wait_for(state="visible", timeout=10000)
                 password_input.fill(PASSWORD)
                 
                 print("✅ تم إدخال البيانات! جاري الضغط على زر الدخول...")
                 # الضغط على زر Log In الأخضر
-                page.locator('button:has-text("Log In")').first.click(timeout=10000)
+                page.locator('button:has-text("Log In")').last.click(timeout=10000)
                 
                 page.wait_for_load_state("domcontentloaded", timeout=60000)
                 time.sleep(random.uniform(5, 8))
                 
-                # التأكد من نجاح الدخول (لو النافذة اتقفلت يبقى دخلنا)
                 if page.locator('input[type="password"]').count() == 0:
                     print("✅ تم تسجيل الدخول بنجاح!")
                 else:
                     print("⚠️ تحذير: النافذة ما زالت مفتوحة، قد يكون هناك خطأ في البيانات.")
+                    page.screenshot(path="login_failed.png")
+                    send_telegram_photo("login_failed.png", "⚠️ النافذة ما زالت مفتوحة، تأكد من الإيميل والباسورد.")
 
             except Exception as fill_error:
                 print("❌ فشل في إدخال البيانات!")
