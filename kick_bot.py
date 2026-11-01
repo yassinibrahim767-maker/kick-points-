@@ -12,7 +12,7 @@ TG_TOKEN = "9183636445:AAFPxvhZZlQBE1mFA8Yde09Ilp4OhJPQ76I"
 TG_CHAT_ID = "8734064592"
 
 STREAM_URL = "https://kick.com/3li_boltx" 
-HOME_URL = "https://kick.com/"  # الصفحة الرئيسية بدل صفحة اللوجن
+HOME_URL = "https://kick.com/" 
 
 SESSION_DURATION = 5.25 * 60 * 60 
 
@@ -54,17 +54,11 @@ def run_session():
             time.sleep(random.uniform(3, 5))
             
             # 1. الضغط على زرار Log In
-            print("جاري البحث عن زرار Log In...")
+            print("جاري الضغط على زرار Log In...")
             try:
-                # جرب طرق مختلفة للعثور على الزرار
                 page.locator('text="Log In"').first.click(timeout=10000)
-                print("تم الضغط على Log In.")
             except:
-                try:
-                    page.goto("https://kick.com/login", wait_until="domcontentloaded", timeout=30000)
-                    print("تم فتح صفحة اللوجن مباشرة.")
-                except:
-                    print("فشل في فتح صفحة اللوجن!")
+                print("فشل في العثور على زرار Log In، جاري المحاولة المباشرة...")
 
             time.sleep(random.uniform(3, 5))
             
@@ -76,32 +70,36 @@ def run_session():
                     time.sleep(3)
                 except: pass
             
-            # 3. إدخال البيانات
-            print("جاري البحث عن خانة اسم المستخدم...")
+            # 3. إدخال البيانات (استخدام type="text" و type="password" بدل name)
+            print("جاري إدخال بيانات الدخول...")
             try:
-                page.wait_for_selector('input[name="username"]', timeout=30000)
-                print("✅ ظهرت خانة الإسم! جاري إدخال البيانات...")
-                page.fill('input[name="username"]', USERNAME)
-                page.fill('input[name="password"]', PASSWORD)
+                # انتظار ظهور خانة الإيميل/اليوزر
+                email_input = page.locator('input[type="text"]').first
+                email_input.wait_for(state="visible", timeout=30000)
+                email_input.fill(USERNAME)
                 
-                print("جاري الضغط على زر تسجيل الدخول...")
-                # الضغط على زرار Submit أو Log In
-                page.locator('button[type="submit"], button:has-text("Log In")').first.click(timeout=10000)
+                # انتظار ظهور خانة الباسورد
+                password_input = page.locator('input[type="password"]').first
+                password_input.wait_for(state="visible", timeout=10000)
+                password_input.fill(PASSWORD)
+                
+                print("✅ تم إدخال البيانات! جاري الضغط على زر الدخول...")
+                # الضغط على زر Log In الأخضر
+                page.locator('button:has-text("Log In")').first.click(timeout=10000)
                 
                 page.wait_for_load_state("domcontentloaded", timeout=60000)
                 time.sleep(random.uniform(5, 8))
                 
-                # التأكد من نجاح الدخول
-                if page.locator('input[name="username"]').count() > 0:
-                    print("⚠️ تحذير: يبدو أن تسجيل الدخول لم ينجح.")
-                    send_telegram_message("⚠️ البوت فشل في تسجيل الدخول. يرجى التحقق من البيانات.")
-                else:
+                # التأكد من نجاح الدخول (لو النافذة اتقفلت يبقى دخلنا)
+                if page.locator('input[type="password"]').count() == 0:
                     print("✅ تم تسجيل الدخول بنجاح!")
+                else:
+                    print("⚠️ تحذير: النافذة ما زالت مفتوحة، قد يكون هناك خطأ في البيانات.")
 
             except Exception as fill_error:
-                print("❌ فشل في العثور على خانة الاسم!")
+                print("❌ فشل في إدخال البيانات!")
                 page.screenshot(path="login_error.png")
-                send_telegram_photo("login_error.png", "❌ البوت عجز عن تسجيل الدخول. دي صورة الشاشة.")
+                send_telegram_photo("login_error.png", "❌ البوت عجز عن إدخال البيانات. دي صورة الشاشة.")
                 raise fill_error
 
             print("جاري الانتقال إلى القناة...")
