@@ -27,7 +27,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
-          pip install camoufox recognizer requests
+          pip install "camoufox[geoip]" recognizer requests
           
       - name: Run Bot
         env:
