@@ -12,7 +12,7 @@ TG_TOKEN = "9183636445:AAFPxvhZZlQBE1mFA8Yde09Ilp4OhJPQ76I"
 TG_CHAT_ID = "8734064592"
 
 STREAM_URL = "https://kick.com/3li_boltx" 
-LOGIN_URL = "https://kick.com/login"
+HOME_URL = "https://kick.com/"  # الصفحة الرئيسية بدل صفحة اللوجن
 
 SESSION_DURATION = 5.25 * 60 * 60 
 
@@ -49,47 +49,59 @@ def run_session():
     with Camoufox(headless="virtual", geoip=True, canvas_noise=False) as browser:
         page = browser.new_page()
         try:
-            print("جاري فتح صفحة تسجيل الدخول...")
-            page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=60000)
-            time.sleep(random.uniform(5, 8))  # زيادة وقت الانتظار عشان الكابتشا تحل نفسها
+            print("جاري فتح الصفحة الرئيسية...")
+            page.goto(HOME_URL, wait_until="domcontentloaded", timeout=60000)
+            time.sleep(random.uniform(3, 5))
             
-            # فحص الكابتشا
+            # 1. الضغط على زرار Log In
+            print("جاري البحث عن زرار Log In...")
+            try:
+                # جرب طرق مختلفة للعثور على الزرار
+                page.locator('text="Log In"').first.click(timeout=10000)
+                print("تم الضغط على Log In.")
+            except:
+                try:
+                    page.goto("https://kick.com/login", wait_until="domcontentloaded", timeout=30000)
+                    print("تم فتح صفحة اللوجن مباشرة.")
+                except:
+                    print("فشل في فتح صفحة اللوجن!")
+
+            time.sleep(random.uniform(3, 5))
+            
+            # 2. محاولة حل الكابتشا لو ظهرت
             if page.locator('iframe[title*="reCAPTCHA"]').count() > 0:
                 print("تم اكتشاف كابتشا! جاري محاولة الحل...")
                 try: 
                     SyncChallenger(page).solve_recaptcha()
                     time.sleep(3)
-                except Exception as e: 
-                    print(f"فشل حل الكابتشا: {e}")
+                except: pass
             
+            # 3. إدخال البيانات
             print("جاري البحث عن خانة اسم المستخدم...")
             try:
-                # استنى أطول شوية (30 ثانية) عشان الكابتشا تحل نفسها
                 page.wait_for_selector('input[name="username"]', timeout=30000)
                 print("✅ ظهرت خانة الإسم! جاري إدخال البيانات...")
                 page.fill('input[name="username"]', USERNAME)
                 page.fill('input[name="password"]', PASSWORD)
                 
                 print("جاري الضغط على زر تسجيل الدخول...")
-                page.click('button[type="submit"]')
+                # الضغط على زرار Submit أو Log In
+                page.locator('button[type="submit"], button:has-text("Log In")').first.click(timeout=10000)
+                
                 page.wait_for_load_state("domcontentloaded", timeout=60000)
                 time.sleep(random.uniform(5, 8))
                 
                 # التأكد من نجاح الدخول
                 if page.locator('input[name="username"]').count() > 0:
-                    print("⚠️ تحذير: يبدو أن تسجيل الدخول لم ينجح (ما زالت خانة الاسم موجودة).")
+                    print("⚠️ تحذير: يبدو أن تسجيل الدخول لم ينجح.")
                     send_telegram_message("⚠️ البوت فشل في تسجيل الدخول. يرجى التحقق من البيانات.")
                 else:
                     print("✅ تم تسجيل الدخول بنجاح!")
 
             except Exception as fill_error:
-                print("❌ فشل في العثور على خانة الاسم أو ظهرت كابتشا!")
-                print("جاري تصوير الشاشة وإرسالها لتليجرام...")
-                page.screenshot(path="captcha_error.png")
-                send_telegram_photo("captcha_error.png", "❌ البوت عجز عن تسجيل الدخول. دي صورة الشاشة عشان تشوف السبب.")
-                print("--- محتوى الصفحة (أول 1000 حرف) للتحليل ---")
-                print(page.content()[:1000])
-                print("------------------------------------------")
+                print("❌ فشل في العثور على خانة الاسم!")
+                page.screenshot(path="login_error.png")
+                send_telegram_photo("login_error.png", "❌ البوت عجز عن تسجيل الدخول. دي صورة الشاشة.")
                 raise fill_error
 
             print("جاري الانتقال إلى القناة...")
