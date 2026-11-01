@@ -1,37 +1,22 @@
-yaml
-name: Kick Bot Auto-Run
+name: Workflow Configuration Test
 
 on:
-  schedule:
-    - cron: '0 * * * *'
   workflow_dispatch:
 
-concurrency:
-  group: kick-bot-group
-  cancel-in-progress: false
-
 jobs:
-  run-bot:
+  validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-          pip install camoufox recognizer requests
+      - name: Verify Python installation
+        run: python --version
 
-      - name: Run Bot
-        env:
-          DISPLAY: ':99'
-        run: |
-          Xvfb :99 -screen 0 1920x1080x24 &
-          python kick_bot.py
-
+      - name: Check Python syntax without running scripts
+        run: python -m compileall -q .
