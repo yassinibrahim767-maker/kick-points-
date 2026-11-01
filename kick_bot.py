@@ -1,11 +1,11 @@
 import time
 import random
 import string
-import os
 import requests
 from camoufox.sync_api import Camoufox
 from recognizer.agents.playwright import SyncChallenger
 
+# ⚠️ تنبيه: البيانات مكتوبة مباشرة هنا (الريبو عام). يُفضل تغييرها لاحقاً لأسباب أمنية.
 USERNAME = "mryassin46"
 PASSWORD = "Ya14$$99$$"
 TG_TOKEN = "9183636445:AAFPxvhZZlQBE1mFA8Yde09Ilp4OhJPQ76I"
@@ -40,20 +40,45 @@ def run_session():
     with Camoufox(headless="virtual", geoip=True, canvas_noise=False) as browser:
         page = browser.new_page()
         try:
-            # التعديل هنا: غيرنا networkidle لـ domcontentloaded
+            print("جاري فتح صفحة تسجيل الدخول...")
             page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=60000)
             time.sleep(random.uniform(3, 5))
             
+            # فحص الكابتشا
             if page.locator('iframe[title*="reCAPTCHA"]').count() > 0:
+                print("تم اكتشاف كابتشا! جاري محاولة الحل...")
                 try: SyncChallenger(page).solve_recaptcha()
                 except: pass
             
-            page.fill('input[name="username"]', USERNAME)
-            page.fill('input[name="password"]', PASSWORD)
-            page.click('button[type="submit"]')
-            page.wait_for_load_state("domcontentloaded", timeout=60000)
-            time.sleep(random.uniform(3, 5))
+            print("جاري البحث عن خانة اسم المستخدم...")
+            try:
+                # الانتظار حتى تظهر خانة الاسم (بحد أقصى 15 ثانية)
+                page.wait_for_selector('input[name="username"]', timeout=15000)
+                
+                print("تم العثور على الخانات، جاري إدخال البيانات...")
+                page.fill('input[name="username"]', USERNAME)
+                page.fill('input[name="password"]', PASSWORD)
+                
+                print("جاري الضغط على زر تسجيل الدخول...")
+                page.click('button[type="submit"]')
+                page.wait_for_load_state("domcontentloaded", timeout=60000)
+                time.sleep(random.uniform(5, 8))
+                
+                # التأكد من نجاح الدخول
+                if page.locator('input[name="username"]').count() > 0:
+                    print("⚠️ تحذير: يبدو أن تسجيل الدخول لم ينجح (ما زالت خانة الاسم موجودة).")
+                    send_telegram_message("⚠️ البوت فشل في تسجيل الدخول. يرجى التحقق من البيانات.")
+                else:
+                    print("✅ تم تسجيل الدخول بنجاح!")
 
+            except Exception as fill_error:
+                print("❌ فشل في العثور على خانة الاسم!")
+                print("--- محتوى الصفحة (أول 3000 حرف) للتحليل ---")
+                print(page.content()[:3000])
+                print("------------------------------------------")
+                raise fill_error
+
+            print("جاري الانتقال إلى القناة...")
             page.goto(STREAM_URL, wait_until="domcontentloaded", timeout=60000)
             time.sleep(random.uniform(4, 7)) 
             
