@@ -6,10 +6,10 @@ import requests
 from camoufox.sync_api import Camoufox
 from recognizer.agents.playwright import SyncChallenger
 
-USERNAME = os.environ.get("KICK_USERNAME")
-PASSWORD = os.environ.get("KICK_PASSWORD")
-TG_TOKEN = os.environ.get("TG_TOKEN")
-TG_CHAT_ID = os.environ.get("TG_CHAT_ID")
+USERNAME = os.environ.get("mryassin46")
+PASSWORD = os.environ.get("Ya14$$99$$")
+TG_TOKEN = os.environ.get("9183636445:AAFPxvhZZlQBE1mFA8Yde09Ilp4OhJPQ76I")
+TG_CHAT_ID = os.environ.get("8734064592")
 
 STREAM_URL = "https://kick.com/3li_boltx" 
 LOGIN_URL = "https://kick.com/login"
