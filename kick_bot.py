@@ -58,7 +58,6 @@ def run_session():
             try:
                 page.locator('text="Log In"').first.click(timeout=10000)
             except:
-                print("فشل في العثور على زرار Log In العلوي.")
                 pass
 
             time.sleep(random.uniform(3, 5))
@@ -74,14 +73,15 @@ def run_session():
             # 3. إدخال البيانات
             print("جاري إدخال بيانات الدخول...")
             try:
-                # البحث عن الخانة باستخدام النص المكتوب فوقها
+                # 1. خانة الإيميل: هنستخدم get_by_label (لأنها كانت شغالة)
                 email_input = page.get_by_label("Email or Username")
                 email_input.wait_for(state="visible", timeout=30000)
                 email_input.fill(USERNAME)
+                time.sleep(1)
                 
-                # البحث عن خانة الباسورد
-                password_input = page.get_by_label("Password")
-                password_input.wait_for(state="visible", timeout=10000)
+                # 2. خانة الباسورد: هنستخدم input[type="password"] عشان نضمن إننا لقطناها
+                password_input = page.locator('input[type="password"]').first
+                password_input.wait_for(state="visible", timeout=15000)
                 password_input.fill(PASSWORD)
                 
                 print("✅ تم إدخال البيانات! جاري الضغط على زر الدخول...")
